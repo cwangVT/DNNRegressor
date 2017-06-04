@@ -1,5 +1,5 @@
 # DNNRegressor
-Random Dataset creater (Python)
+Random Dataset Creater (Python)
 
 Deep Neural Network Regressor (Tensorflow)
 
