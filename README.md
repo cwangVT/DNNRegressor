@@ -3,6 +3,8 @@ Create and train a deep neural network regressor to fit a complex target functio
 
 Random Dataset Creater (Python)
 
+Data preprocessing
+
 Deep Neural Network Regressor (Tensorflow)
 
 Optimizer (Scipy, Numpy)
