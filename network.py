@@ -370,20 +370,6 @@ with tf.Session() as sess:
 	bb5 = biases['b5'].eval()
 	bout = biases['out'].eval()
 
-def nn_predict_as_tf(xx):
-        # initialize variable
-	if True:
-#		predicted_vals = sess.run(pred, feed_dict={x:[[xx[i] for i in range(N_Features)]], keep_prob:1})
-		pred_layer_1 = tf.nn.relu(tf.add(tf.matmul(xx, hh1), bb1))
-		pred_layer_2 = tf.nn.relu(tf.add(tf.matmul(pred_layer_1, hh2), bb2))
-		pred_layer_3 = tf.nn.relu(tf.add(tf.matmul(pred_layer_2, hh3), bb3))
-		pred_layer_4 = tf.nn.relu(tf.add(tf.matmul(pred_layer_3, hh4), bb4))
-	        pred_layer_5 = tf.nn.relu(tf.add(tf.matmul(pred_layer_4, hh5), bb5))
-	        pred_out_layer = tf.add(tf.matmul(pred_layer_5, hout),bout)
-	        return pred_out_layer
-	else:
-		print("=========  can not read model ========")
-		return None
 def np_relu(xx):
 	return np.maximum(xx, 0, xx)
 
@@ -396,33 +382,7 @@ def nn_predict_as_np(xx):
                 pred_layer_5 = np_relu(np.add(np.matmul(pred_layer_4, hh5), bb5))
                 pred_out_layer = np.add(np.matmul(pred_layer_5, hout),bout)
                 return pred_out_layer
-
-def nn_predict_as_sess(xx):
-        with tf.Session() as sess_tmp:
-        # initialize variable
-            if True:
-                saver.restore(sess_tmp, path_to_save)
-                predicted_vals = sess_tmp.run(pred, feed_dict={x:[[xx[i] for i in range(N_Features)]], keep_prob:1})
-                return predicted_vals[0][0]
-            else:
-                print("=========  can not read model ========")
-                return None
-
-def nn_predict_as_tf_sess(xx):
-        if True:
-	    with tf.Session() as sess_tmp:
-#               predicted_vals = sess.run(pred, feed_dict={x:[[xx[i] for i in range(N_Features)]], keep_prob:1})
-                pred_layer_1 = tf.nn.relu(tf.add(tf.matmul(xx, hh1), bb1))
-                pred_layer_2 = tf.nn.relu(tf.add(tf.matmul(pred_layer_1, hh2), bb2))
-                pred_layer_3 = tf.nn.relu(tf.add(tf.matmul(pred_layer_2, hh3), bb3))
-                pred_layer_4 = tf.nn.relu(tf.add(tf.matmul(pred_layer_3, hh4), bb4))
-                pred_layer_5 = tf.nn.relu(tf.add(tf.matmul(pred_layer_4, hh5), bb5))
-                pred_out_layer = tf.add(tf.matmul(pred_layer_5, hout),bout)
-                return pred_out_layer.eval()[0][0]
-        else:
-                print("=========  can not read model ========")
-                return None
-
+	
 initial_guess =[[0. for i in range(N_Features)]]# [[tf.cast(0.0,tf.float64) for i in range(N_Features)]]
 #initial_guess = [[-4.07251505153,12.2169885084, 8.93008115044,12.4504141069,-0.286904094387, 11.5846259272,2.69020332846,0.660371587514,-4.10793877444,-10.6211903571]]
 initial_guess = [[(initial_guess[0][ii]-means[ii])/maxmin[ii] for ii in range(N_Features)]]
@@ -448,93 +408,3 @@ minimal = scipy.optimize.basinhopping(nn_predict_as_np,initial_guess,
 print(minimal)
 print("minimal Y: ", post_process(minimal['fun'],N_Features))
 print("minimal X: ", [post_process(minimal['x'][ii],ii) for ii in range(N_Features)])
-
-
-
-"""
-minimizer_kwargs = dict(method="L-BFGS-B", bounds=bounds, jac = False)
-minimal = scipy.optimize.basinhopping(nn_predict_as_np,initial_guess,
-		niter=100, disp=True)
-"""
-
-"""
-initial_guess =  [[tf.cast(random.random(),tf.float64)for i in range(N_Features)]]
-#initial_guess = [[-1.02442431, -0.59710252, -0.01372005 ]]
-optimal_xx = tf.Variable(tf.random_normal([1,N_Features], -0, 0,dtype=tf.float64))
-
-predict_value = nn_predict_as_tf(optimal_xx)
-
-optimizer_aneal = tf.train.AdamOptimizer(learning_rate=0.001).minimize(predict_value,var_list=[optimal_xx])
-
-with tf.Session() as sess:
-	sess.run(tf.initialize_all_variables())
-	initial_guess = optimal_xx.eval()
-	print(initial_guess)
-	print(nn_predict_as_tf(initial_guess).eval())
-	optimizer_aneal.run()
-	print(optimal_xx.eval())
-	print(predict_value.eval())
-	'''
-	gred = 10
-	while abs(gred)>0.001:
-		optimizer_aneal.run()
-		print(optimal_xx.eval())
-		result = nn_predict_as_tf(optimal_xx)
-		print(result.eval())
-		g_and_v = tf.train.AdamOptimizer(learning_rate=0.1).compute_gradients(predict_value,var_list=[optimal_xx])
-		print(g_and_v,g_and_v[0][0].eval(),g_and_v[0][1].eval())
-		gred = g_and_v[0][0].eval()
-
-	#initial_guess =[[0.0]]# [[tf.cast(0.0,tf.float64) for i in range(N_Features)]]
-	print("=======",nn_predict_as_tf_sess(initial_guess))
-	minimal = scipy.optimize.basinhopping(nn_predict_as_sess,initial_guess,
-                        niter=500, disp=True)
-	'''
-#	_, c, p = sess.run([optimizer_aneal,predict_value,optimal_xx])
-#	print(c,p)
-
-"""
-
-"""
-initial_guess =  [[random.random() for i in range(N_Features)]]
-optimal_xx =  tf.placeholder("float", [None, N_Features]) 
-test =  nn_predict(optimal_xx)
-"""
-"""
-
-initial_guess = [random.random() for i in range(N_Features)]
-
-#initial_guess = [-0.136325  ,  0.12011677, -0.07066852]
-minimal = scipy.optimize.minimize(nn_predict,
-		initial_guess,method="L-BFGS-B", jac=False, options={'disp':True})
-
-print(minimal)
-"""
-
-
-"""
-#initial_guess = [[0.0 for i in range(N_Features)]]
-#initial_guess = [-0.136325  ,  0.12011677, -0.07066852]
-if True:
-        minimal = scipy.optimize.basinhopping(nn_predict,
-			initial_guess,niter=200, disp=True)
-        print(minimal)
-else:
-        print("can't find minimal")
-
-
-"""
-"""
-xmin = [-0.5 for i in range(N_Features)]
-xmax = [0.5 for i in range(N_Features)]
-bounds = [(low, high) for low, high in zip(xmin, xmax)]
-minimizer_kwargs = dict(method="L-BFGS-B", bounds=bounds)
-initial_guess = [0.0 for i in range(N_Features)]
-initial_guess = [-0.19296299,  0.09958632, -0.124773  ]
-try:
-	minimal = scipy.optimize.basinhopping(nn_predict,initial_guess, minimizer_kwargs=minimizer_kwargs, niter= 500, disp=True)
-	print(minimal)
-except:
-	print("can't find minimal")
-
-"""
