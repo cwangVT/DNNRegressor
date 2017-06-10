@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 import random
 import numpy as np
 import tensorflow as tf
@@ -19,9 +20,10 @@ import matplotlib.pyplot as plt
 # ==============================================================================
 input_fold = "input_data/"
 output_fold = "output_data/"
+path_to_save = "tmp/my_model.ckpt"
 pre_post_process = True
 
-# set the verbosity mode to show detailed info during train
+# set the verbosity mode to show detailed info during training
 #tf.logging.set_verbosity(tf.logging.INFO)
 
 # ============================================================================
@@ -29,30 +31,37 @@ pre_post_process = True
 # ============================================================================
 
 # Set the number of features
-N_Features = 20 
+N_Features = 10 
 
-# Set the names of the features, label
-FEATURES = ["x"+str(i+1) for i in range(N_Features) ]
-LABEL = "y"
-COLUMNS = FEATURES+[LABEL]
-
-# load the train dataset from csv file.
-# here read from train_set.txt, skip leading space
-# skip first row, and use COLUMNS to set the names of columes
-train_set = pd.read_csv(input_fold+"train_set.txt", skipinitialspace=True,
-                           skiprows=1, names=COLUMNS)
+# load the train dataset from csv file
+# here assuming that the csv file has head line
+train_set = pd.read_csv(input_fold+"train_set.txt", skipinitialspace=True)
+if train_set.shape[1]!= N_Features+1:
+	sys.exit("Error: # of features in training set (%d) is not equal to N_Features (%d)" % (train_set.shape[1]-1, N_Features))
+COLUMNS = train_set.columns.values.tolist()
 
 # load the validation data from csv file
-valid_set = pd.read_csv(input_fold+"valid_set.txt", skipinitialspace=True,
-                           skiprows=1, names=COLUMNS)
-
+valid_set = pd.read_csv(input_fold+"valid_set.txt", skipinitialspace=True)	
+if valid_set.shape[1]!= N_Features+1:
+	sys.exit("Error: # of features in validating set (%d) is not equal to N_Features (%d)" % (valid_set.shape[1]-1, N_Features))
+if valid_set.columns.values.tolist()!=COLUMNS:
+	sys.exit("Error: name of features in validating set is different")
 # load the test dataset from csv file.
-test_set = pd.read_csv(input_fold+"test_set.txt", skipinitialspace=True,
-                           skiprows=1, names=COLUMNS)
+test_set = pd.read_csv(input_fold+"test_set.txt", skipinitialspace=True)
+if test_set.shape[1]!= N_Features+1:
+	sys.exit("Error: # of features in testing set (%d) is not equal to N_Features (%d)" % (test_set.shape[1]-1, N_Features))
+if test_set.columns.values.tolist()!=COLUMNS:
+        sys.exit("Error: name of features in testing set is different")
 
 # load the predict dataset from csv file.
-pred_set = pd.read_csv(input_fold+"predict_set.txt", skipinitialspace=True,
-                           skiprows=1, names=COLUMNS)
+pred_set = pd.read_csv(input_fold+"predict_set.txt", skipinitialspace=True)
+if pred_set.shape[1]!= N_Features+1:
+	sys.exit("Error: # of features in predicting set (%d) is not equal to N_Features (%d)" % (pred_set.shape[1]-1, N_Features))
+if pred_set.columns.values.tolist()!=COLUMNS:
+        sys.exit("Error: name of features in predicting set is different")
+
+FEATURES = COLUMNS[:-1]
+LABEL = [COLUMNS[-1]]
 
 # get the size of each dataset
 n_sample = train_set.shape[0]
@@ -60,93 +69,76 @@ n_test = test_set.shape[0]
 n_valid = valid_set.shape[0]
 n_pred = pred_set.shape[0]
 
-# change format fromr pd-dataframe to python array
-train_set = [[train_set[kk].values[ii] for kk in COLUMNS ]
-        for ii in range(n_sample)]
-valid_set =  [[valid_set[kk].values[ii] for kk in COLUMNS]
-        for ii in range(n_valid)]
-test_set = [[test_set[kk].values[ii] for kk in COLUMNS]
-        for ii in range(n_test)]
-pred_set = [[pred_set[kk].values[ii] for kk in COLUMNS]
-        for ii in range(n_pred)]
-
 # =============================================================
-# ========= perform normalization (preprocess)=================
+# ================ perform preprocess =========================
 # =============================================================
 # after processing: x_norm = [x - mean(x)]/[max(x)-min(x)]
 
 if pre_post_process:
-	means=[0 for ii in range(N_Features+1)]
-	maxx =[-float('Inf') for ii in range(N_Features+1)]
-	minn =[ float('Inf') for ii in range(N_Features+1)]
-	maxmin = [0 for ii in range(N_Features+1)]
-	for ii in range(n_sample):
-		for jj in range(N_Features+1):
-			means[jj]+= train_set[ii][jj]/n_sample
-			maxx[jj] = max(maxx[jj],train_set[ii][jj])
-			minn[jj] = min(minn[jj],train_set[ii][jj])
-
-	for jj in range(N_Features+1):
+	means = train_set.mean().to_dict()
+	maxx = train_set.max().to_dict()
+	minn = train_set.min().to_dict()
+	maxmin = {}
+	for jj in COLUMNS:
 		maxmin[jj] = maxx[jj]-minn[jj]
 		if maxmin[jj] == 0:
-			print( "============= feature "+str(jj)+" never change ======")
+			print( "======= Feature "+jj+" never change")
 
 def pre_process(xx,index):
 	if pre_post_process:
-		xx-=means[index]	
+		xx-=means[index]
 		if maxmin[index] != 0:
 			xx/=maxmin[index]
 	return xx
-# print original data
-# print(train_set[0])
-train_set = [[pre_process(train_set[ii][kk],kk) for kk in range(N_Features+1)]
-	for ii in range(n_sample)]
-valid_set = [[pre_process(valid_set[ii][kk],kk) for kk in range(N_Features+1)]
-	for ii in range(n_valid)]
-test_set =  [[pre_process(test_set[ii][kk],kk) for kk in range(N_Features+1)]
-	for ii in range(n_test)]
-pred_set =  [[pre_process(pred_set[ii][kk],kk) for kk in range(N_Features+1)]
-	for ii in range(n_pred)]
 
-# print pre-processed data, check the pre-process function
-#print(train_set[0])
+train_set.loc[:,:] =[[pre_process(train_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_sample)]
+test_set.loc[:,:] =[[pre_process(test_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_test)]
+pred_set.loc[:,:] =[[pre_process(pred_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_pred)]
+valid_set.loc[:,:] =[[pre_process(valid_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_valid)]
+
 # Separate feature X and label Y
-X_train = [[train_set[ii][kk] for kk in range(N_Features)] 
-	for ii in range(n_sample)]
-Y_train = [[train_set[ii][N_Features]] for ii in range(n_sample)]
-
-X_valid = [[valid_set[ii][kk] for kk in range(N_Features)]
-	for ii in range(n_valid)]
-Y_valid = [[valid_set[ii][N_Features]] for ii in range(n_valid)]
-
-X_test = [[test_set[ii][kk] for kk in range(N_Features)]
-        for ii in range(n_test)]
-Y_test = [[test_set[ii][N_Features]] for ii in range(n_test)]
-
-X_pred = [[pred_set[ii][kk] for kk in range(N_Features)]
-        for ii in range(n_pred)]
-Y_pred = [[pred_set[ii][N_Features]] for ii in range(n_pred)]
-
+X_train = train_set.loc[:,FEATURES]
+Y_train = train_set.loc[:,LABEL]
+X_test = test_set.loc[:,FEATURES]
+Y_test = test_set.loc[:,LABEL]
+X_valid = valid_set.loc[:,FEATURES]
+Y_valid = valid_set.loc[:,LABEL]
+X_pred = pred_set.loc[:,FEATURES]
+Y_pred = pred_set.loc[:,LABEL]
+# saving processing parameters
+f_proc = open(output_fold+"preprocess.txt","w")
+f_proc.write("feature,mean,maxmin\n")
+for ii in COLUMNS:
+	f_proc.write(ii+","+str(means[ii])+","+str(maxmin[ii])+"\n")
+f_proc.close()
+# transfer from np DataFrame to array
+X_train = X_train.values
+Y_train = Y_train.values
+X_test = X_test.values
+Y_test = Y_test.values
+X_valid = X_valid.values
+Y_valid = Y_valid.values
+X_pred = X_pred.values
+Y_pred = Y_pred.values
 # =============================================================
 # ============== Set Parameters for NN ========================
 # =============================================================
-learning_rate = 0.0001
-training_epochs = 1000
-batch_size = 10
+learning_rate = 0.00001
+training_epochs = 500
+batch_size = 200
 display_step = 1
 accuracy_step = 10
-save_step = 20
-dropout_rate = 1	# keep rate, 1 means do not drop
-beta = 0.0		# for L2 Regularization, 0 means no regularization
-path_to_save = "tmp/my_model.ckpt"
+save_step = 50
+dropout_rate = 1.0	# keep rate, 1 means do not drop
+beta = 0.00		# for L2 Regularization, 0 means no regularization
 
 # Network Structure Parameters
-n_hidden_1 = 50
-n_hidden_2 = 50
-n_hidden_3 = 50
-n_hidden_4 = 50
-n_hidden_5 = 50
-n_input = len(FEATURES) 	# number of input features
+n_hidden_1 = 150
+n_hidden_2 = 150
+n_hidden_3 = 150
+n_hidden_4 = 150
+n_hidden_5 = 150
+n_input = N_Features	 	# number of input features
 n_classes = 1			# for regressin, only one output class
 
 # ============================================================================
@@ -219,8 +211,13 @@ saver = tf.train.Saver()
 # =============== Run the DNN ============================================
 # ========================================================================
 
-with tf.Session() as sess:
+config = tf.ConfigProto()
+# Do not use GPU
+config = tf.ConfigProto(device_count = {'GPU':0 })
+
+with tf.Session(config=config) as sess:
 	# initialize variable
+	#sess.run(tf.global_variables_initializer())
 	sess.run(tf.initialize_all_variables())
 	try:
 		saver.restore(sess, path_to_save)
@@ -243,7 +240,9 @@ with tf.Session() as sess:
 			# ===== Key Work: Optimization ======
 			# ===================================
 			_, c, p = sess.run([optimizer, cost, pred], 
-				feed_dict={x_holder: batch_x,y_holder: batch_y, keep_prob:dropout_rate})
+				feed_dict={x_holder: batch_x,
+					y_holder: batch_y,
+					keep_prob:dropout_rate})
 			# aver loss
 			avg_cost += c/total_batch
 		# ========================================
@@ -276,7 +275,7 @@ with tf.Session() as sess:
 				print ("[*]============================")
 		if (epoch+1) % accuracy_step == 0:
 		# ========================================================
-		# ============= test the accuracy use validation data ====
+		# ========== test the accuracy using validation data =====
 		# ========================================================
 			accuracy = sess.run(cost, 
 				feed_dict={x_holder:X_valid, y_holder: Y_valid, keep_prob:1})
@@ -309,11 +308,11 @@ def post_process(xx,index):
 	else:
 		return xx 
 # print post processed data, check post-process function
-#print([post_process(train_set[0][i],i) for i in range(N_Features+1)])
+#print([post_process(train_set_values[0][i],i) for i in range(N_Features+1)])
 
 # save the testing data
-Y_test = [[post_process(Y_test[ii][0],N_Features)] for ii in range(len(Y_test))]
-test_vals = [[post_process(test_vals[ii][0],N_Features)] for ii in range(len(Y_test))]
+Y_test = [[post_process(Y_test[ii][0],LABEL[0])] for ii in range(len(Y_test))]
+test_vals = [[post_process(test_vals[ii][0],LABEL[0])] for ii in range(len(Y_test))]
 
 ftmp= open(output_fold+"test_result.txt","w")
 for ii in range(len(test_vals)):
@@ -330,9 +329,9 @@ plt.grid(True)
 plt.savefig(output_fold+"test_result.png")
 
 # saving pred_result
-Y_pred = [[post_process(Y_pred[ii][0],N_Features)] for ii in range(len(Y_pred))]
-pred_vals = [[post_process(pred_vals[ii][0],N_Features)] for ii in range(len(pred_vals))]
-plot_x = [[post_process(X_pred[ii][0],0)] for ii in range(len(X_pred))]
+Y_pred = [[post_process(Y_pred[ii][0],LABEL[0])] for ii in range(len(Y_pred))]
+pred_vals = [[post_process(pred_vals[ii][0],LABEL[0])] for ii in range(len(pred_vals))]
+plot_x = [[post_process(X_pred[ii][0],COLUMNS[0])] for ii in range(len(X_pred))]
 
 ftmp= open(output_fold+"pred_result.txt","w")
 for ii in range(len(pred_vals)):
@@ -349,62 +348,3 @@ plt.grid(True)
 plt.savefig(output_fold+"pred_result.png")
 
 
-
-# ======================================================================
-# =================== Simulating Annealing =============================
-# ======================================================================
-
-# load the DNN weights and biases
-with tf.Session() as sess:
-	saver.restore(sess, path_to_save)
-	hh1 = weights['h1'].eval()
-	hh2 = weights['h2'].eval()
-	hh3 = weights['h3'].eval()
-	hh4 = weights['h4'].eval()
-	hh5 = weights['h5'].eval()
-	hout= weights['out'].eval()
-	bb1 = biases['b1'].eval()
-	bb2 = biases['b2'].eval()
-	bb3 = biases['b3'].eval()
-	bb4 = biases['b4'].eval()
-	bb5 = biases['b5'].eval()
-	bout = biases['out'].eval()
-
-def np_relu(xx):
-	return np.maximum(xx, 0, xx)
-
-def nn_predict_as_np(xx):
-	if True:
-                pred_layer_1 = np_relu(np.add(np.matmul(xx, hh1), bb1))
-                pred_layer_2 = np_relu(np.add(np.matmul(pred_layer_1, hh2), bb2))
-                pred_layer_3 = np_relu(np.add(np.matmul(pred_layer_2, hh3), bb3))
-                pred_layer_4 = np_relu(np.add(np.matmul(pred_layer_3, hh4), bb4))
-                pred_layer_5 = np_relu(np.add(np.matmul(pred_layer_4, hh5), bb5))
-                pred_out_layer = np.add(np.matmul(pred_layer_5, hout),bout)
-                return pred_out_layer
-	
-initial_guess =[[0. for i in range(N_Features)]]# [[tf.cast(0.0,tf.float64) for i in range(N_Features)]]
-#initial_guess = [[-4.07251505153,12.2169885084, 8.93008115044,12.4504141069,-0.286904094387, 11.5846259272,2.69020332846,0.660371587514,-4.10793877444,-10.6211903571]]
-initial_guess = [[(initial_guess[0][ii]-means[ii])/maxmin[ii] for ii in range(N_Features)]]
-print("=======",post_process(nn_predict_as_np(initial_guess),N_Features))
-
-xmin = [-0.5 for i in range(N_Features)]
-xmax = [0.5 for i in range(N_Features)]
-bounds = [(low, high) for low, high in zip(xmin, xmax)]
-
-minimal = scipy.optimize.minimize(nn_predict_as_np,
-                initial_guess,method="L-BFGS-B", jac=False, bounds=bounds, options={'disp':True,'factr':0,'ftol':0,'gtol':0.0001})
-
-#print(minimal)
-print("minimal Y: ", post_process(minimal['fun'][0],N_Features))
-#print(minimal['x'])
-print("minimal X: ", [post_process(minimal['x'][ii],ii) for ii in range(N_Features)])
-
-
-minimizer_kwargs = dict(method="L-BFGS-B", bounds=bounds, jac = False)
-minimal = scipy.optimize.basinhopping(nn_predict_as_np,initial_guess,
-                 minimizer_kwargs=minimizer_kwargs,niter=20, disp=True)
-
-print(minimal)
-print("minimal Y: ", post_process(minimal['fun'],N_Features))
-print("minimal X: ", [post_process(minimal['x'][ii],ii) for ii in range(N_Features)])
