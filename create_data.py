@@ -3,7 +3,7 @@ import scipy.optimize
 import random
 
 input_fold = "input_data/"
-N_Features = 20 
+N_Features = 5 
 amp = 20
 coeff = [random.random() for i in range(N_Features)]
 power = [random.choice([2,2,2]) for i in range(N_Features)]
@@ -18,12 +18,6 @@ def yy(xxx):
 	#result += coeff[ii]*(xxx[ii]-bias[ii]-0.1*amp*math.sin(xxx[ii]))**power[ii]
 	result += coeff[ii]*(xxx[ii]-bias[ii])**power[ii]-amp*math.sin(xxx[ii])
     return result
-    #return (xxx-)**2+(xx2+5)**2+(xx3-5)**2
-    #return math.sqrt(xx1*xx1+xx2*xx2)
-    #return xx1*xx2
-    #return 100*math.sin(xx1+xx2)
-    #return xx1*math.sin(xx2)
-    #return xx1*xx2-math.sin(xx1)-math.cos(xx2)
 
 ftmp = open(input_fold+"train_set.txt","w")
 fvalid = open(input_fold+"valid_set.txt","w")
@@ -39,10 +33,10 @@ ftmp.write(head + ",y\n")
 fvalid.write(head + ",y\n")
 fpred.write(head + ",y\n")
 
-n_train_set = 100000
-n_valid_set = 10000
-n_test_set = 10000
-n_pred_set = 10000
+n_train_set = 50000
+n_valid_set = 5000
+n_test_set = 5000
+n_pred_set = 5000
 train_set = []
 test_set= []
 
