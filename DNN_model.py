@@ -10,6 +10,7 @@ import scipy.optimize
 import matplotlib
 matplotlib.use("Agg")				# to work without X-window
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 def Load_Prep_Data(input_fold,nf,nl):
 	train = pd.read_csv(input_fold+"train_set_preped.txt", skipinitialspace=True)
 	COLUMNS = train.columns.values.tolist()
@@ -37,6 +38,8 @@ def Load_Prep_Data(input_fold,nf,nl):
 	Xpred = pred.loc[:,FEATURES].values
 	Ypred = pred.loc[:,LABEL].values
 	return Xtrain,Ytrain,Xvalid,Yvalid,Xtest,Ytest,Xpred,Ypred
+=======
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56
 
 def Create_Variables(n_input, n_classes=1, DIM=[50,50,50,50,50]):
 	n_layer = len(DIM)
@@ -69,6 +72,7 @@ def Create_DNN_Model(x_holder, y_holder, keep_prob, n_input, n_classes=1, DIM=[5
 def Predict_Function(layers):
 	return layers[-1]
 
+<<<<<<< HEAD
 def Regularize_Function(list_of_weights):
 	regularizers = tf.zeros([],dtype = tf.float64)
 	for weights in list_of_weights:
@@ -80,6 +84,18 @@ def Regularize_Function(list_of_weights):
 def Cost_Function(y_holder, last_layers, list_of_weights, beta = 0):
 	pred = Predict_Function(last_layers)
 	regularizers = Regularize_Function(list_of_weights)
+=======
+def Regularize_Function(weights):
+	n_layer = len(weights)-1
+	regularizers = tf.nn.l2_loss(weights[n_layer])
+	for ii in range(n_layer):
+		regularizers = regularizers + tf.nn.l2_loss(weights[ii])
+	return regularizers
+
+def Cost_Function(y_holder,layers, weights, beta = 0):
+	pred = Predict_Function(layers)
+	regularizers = Regularize_Function(weights)
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56
 	cost = tf.reduce_mean(tf.square(pred-y_holder))
 	cost = cost+beta*regularizers
 	return cost,pred
@@ -125,11 +141,19 @@ def Train_DNN(sess, saver, optimizer, pred, cost, x_holder, x_train, x_valid, x_
 			print ("model_saved to: "+path_to_save)
 			print ("[*]_________________________")
 	print ("Optimization Finished!")
+<<<<<<< HEAD
 	accuracy = sess.run(cost, feed_dict={x_holder:x_test, y_holder: y_test, keep_prob:1})
         print ("Final Accuracy:", accuracy)
 
 
 def Pred_DNN(sess, saver, pred, x_holder, x_data, keep_prob,  path_to_save = "tmp/my_model.ckpt"):
+=======
+	accuracy = sess.run(cost, feed_dict={x_holder:X_test, y_holder: Y_test, keep_prob:1})
+        print ("Final Accuracy:", accuracy)
+
+
+def Pred_RNN(sess, saver, pred, x_holder, x_data, keep_prob):
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56
 	try:
 		saver.restore(sess, path_to_save)
                 print("[*]------ successfully load saved model ------")
@@ -138,9 +162,15 @@ def Pred_DNN(sess, saver, pred, x_holder, x_data, keep_prob,  path_to_save = "tm
 		return None
 	return sess.run(pred, feed_dict={x_holder: x_data, keep_prob:1})
 
+<<<<<<< HEAD
 def Plot_data(x1,y1,x2,y2,index,filename,title = 'predicted(red) vs label(blue)',lty1='rs--',lty2='b^-.'):
 	plt.figure(index)
 	plt.plot(x1,y1, lty1, x2,y2, lty2)
+=======
+def Plot_data(x1,y1,x2,y2,index,filename,title = 'predicted(blue) vs label(red)'):
+	plt.figure(index)
+	plt.plot(x1,y1, 'rs--', x2,y2, 'b^-.')
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56
 	plt.xlabel('samples')
 	plt.ylabel('value')
 	plt.title(title)
@@ -149,6 +179,7 @@ def Plot_data(x1,y1,x2,y2,index,filename,title = 'predicted(red) vs label(blue)'
 
 if __name__ == "__main__":
 	path_to_save = "tmp/my_model.ckpt"
+<<<<<<< HEAD
 	N_Features = 5
 	N_Labels = 1
 	input_fold = "input_data/"
@@ -166,6 +197,35 @@ if __name__ == "__main__":
 	cost_, pred_ = Cost_Function(y_,layers_,list_of_weights_,beta = 0.001)
 
 
+=======
+	N_Features = 16
+	input_fold = "input_data/"
+	output_fold = "output_data/"
+
+	train_set = pd.read_csv(input_fold+"train_set_preped.txt", skipinitialspace=True)
+	valid_set = pd.read_csv(input_fold+"valid_set_preped.txt", skipinitialspace=True)
+	test_set = pd.read_csv(input_fold+"test_set_preped.txt", skipinitialspace=True)
+	pred_set = pd.read_csv(input_fold+"predict_set_preped.txt", skipinitialspace=True)
+	COLUMNS = train_set.columns.values.tolist()
+	FEATURES = COLUMNS[:-1]
+	LABEL = [COLUMNS[-1]]
+
+	X_train = train_set.loc[:,FEATURES].values
+	Y_train = train_set.loc[:,LABEL].values
+	X_test = test_set.loc[:,FEATURES].values
+	Y_test = test_set.loc[:,LABEL].values
+	X_valid = valid_set.loc[:,FEATURES].values
+	Y_valid = valid_set.loc[:,LABEL].values
+	X_pred = pred_set.loc[:,FEATURES].values
+	Y_pred = pred_set.loc[:,LABEL].values
+	
+	x_ = tf.placeholder("float64", [None, N_Features])
+	y_ = tf.placeholder("float64", [None,1])
+	keep_ = tf.placeholder(tf.float64)
+
+	layers_, weights_, bias_ = Create_DNN_Model(x_, y_, keep_,n_input = N_Features, DIM=[50,50,50,50,50])
+	cost_, pred_ = Cost_Function(y_,layers_,weights_)
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56
 	optimizer_ = Optimizer(cost_, learning_rate = 0.0001 )
 	saver_ = tf.train.Saver()
 
@@ -174,6 +234,7 @@ if __name__ == "__main__":
 
 	with tf. Session(config=config) as sess:
 		Train_DNN(sess, saver_, optimizer_, pred_, cost_,x_, X_train, X_valid, X_test,
+<<<<<<< HEAD
 			y_, Y_train, Y_valid, Y_test, keep_, dropout_rate = 1,training_epochs = 20, path_to_save = path_to_save)
 		test_value = Pred_DNN(sess, saver_, pred_, x_, X_test, keep_, path_to_save = path_to_save)
 		pred_value = Pred_DNN(sess, saver_, pred_, x_, X_pred, keep_, path_to_save = path_to_save)
@@ -181,3 +242,12 @@ if __name__ == "__main__":
 	Plot_data(xcoor,test_value[0:100],xcoor,Y_test[0:100],0,output_fold+"test_result.png")
 	xcoor = range(len(Y_pred))
 	Plot_data(xcoor,pred_value,xcoor,Y_pred,1,output_fold+"pred_result.png",lty1='r--',lty2='b-.')
+=======
+			y_, Y_train, Y_valid, Y_test, keep_, dropout_rate = 1)
+		test_value = Pred_RNN(sess, saver_, pred_, x_, X_test, keep_)
+		pred_value = Pred_RNN(sess, saver_, pred_, x_, X_pred, keep_)
+	xcoor = range(100)
+	Plot_data(xcoor,test_value[0:100],xcoor,Y_test[0:100],0,output_fold+"test_result.png")
+	xcoor = range(len(Y_pred))
+	Plot_data(xcoor,pred_value,xcoor,Y_pred,1,output_fold+"pred_result.png")
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56

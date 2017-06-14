@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import sys
 import random
@@ -31,7 +27,7 @@ pre_post_process = True
 # ============================================================================
 
 # Set the number of features
-N_Features = 10 
+N_Features = 16 
 
 # load the train dataset from csv file
 # here assuming that the csv file has head line
@@ -91,10 +87,10 @@ def pre_process(xx,index):
 			xx/=maxmin[index]
 	return xx
 
-train_set.loc[:,:] =[[pre_process(train_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_sample)]
-test_set.loc[:,:] =[[pre_process(test_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_test)]
-pred_set.loc[:,:] =[[pre_process(pred_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_pred)]
-valid_set.loc[:,:] =[[pre_process(valid_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_valid)]
+train_set =pd.DataFrame([[pre_process(train_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_sample)],columns =COLUMNS)
+test_set =pd.DataFrame([[pre_process(test_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_test)],columns =COLUMNS)
+pred_set =pd.DataFrame([[pre_process(pred_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_pred)],columns =COLUMNS)
+valid_set =pd.DataFrame([[pre_process(valid_set[kk][ii],kk) for kk in COLUMNS] for ii in range(n_valid)],columns =COLUMNS)
 
 # Separate feature X and label Y
 X_train = train_set.loc[:,FEATURES]
@@ -123,21 +119,21 @@ Y_pred = Y_pred.values
 # =============================================================
 # ============== Set Parameters for NN ========================
 # =============================================================
-learning_rate = 0.00001
-training_epochs = 500
-batch_size = 200
+learning_rate = 0.0001
+training_epochs = 100
+batch_size = 64 
 display_step = 1
 accuracy_step = 10
-save_step = 50
+save_step = 20
 dropout_rate = 1.0	# keep rate, 1 means do not drop
 beta = 0.00		# for L2 Regularization, 0 means no regularization
 
 # Network Structure Parameters
-n_hidden_1 = 150
-n_hidden_2 = 150
-n_hidden_3 = 150
-n_hidden_4 = 150
-n_hidden_5 = 150
+n_hidden_1 = 50
+n_hidden_2 = 50
+n_hidden_3 = 50
+n_hidden_4 = 50
+n_hidden_5 = 50
 n_input = N_Features	 	# number of input features
 n_classes = 1			# for regressin, only one output class
 

@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import random
 import numpy as np
@@ -23,7 +19,7 @@ path_to_save = "tmp/my_model.ckpt"
 pre_post_process = True
 
 # Set the number of features
-N_Features = 5 
+N_Features = 16 
 
 # Network Structure Parameters
 n_hidden_1 = 50

@@ -27,7 +27,11 @@ pre_post_process = True
 # ============================================================================
 
 # Set the number of features
+<<<<<<< HEAD
 N_Features = 5 
+=======
+N_Features = 16 
+>>>>>>> ae4213b9a7b5babc1a7d117b88dcbdca00be9c56
 
 # load the train dataset from csv file
 # here assuming that the csv file has head line
